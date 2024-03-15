@@ -1,4 +1,4 @@
-name: Create Preview App
+name: Update Feedback Interface
 
 on:
   commit:
@@ -6,10 +6,7 @@ on:
       - main
 
 env:
-  # PROJECT: ${{ github.event.repository.name }}
   COMMIT_ID: ${{ github.event.pull_request.head.sha }}
-  # PR_NUMBER: ${{ github.event.number }}
-  # DOMAIN: feedback-interface.icyntkt.xyz # OurApp Subdomain
   AWS_REGION: us-east-2 # REGION
   ECR_REPOSITORY: feedback-interface-repository # IMAGE_REPOSITORY
   ECS_CLUSTER: team5-feedback-interface-cluster # CLUSTER_NAME
@@ -46,7 +43,7 @@ jobs:
           github-token: ${{ steps.app-token.outputs.token }}
           repository: ${{ github.repository }}
           number: ${{ env.PR_NUMBER }}
-          message: "| Status | Message |\n|--------|-------|\n| \U00002692 | Your preview app is currently being built and deployed to AWS |"
+          message: "| Status | Message |\n|--------|-------|\n| \U00002692 | Your feedback interface is currently being built and deployed to AWS |"
           append: false
 
       - name: Configure AWS credentials
@@ -60,9 +57,13 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Delete App on Amazon ECS
+        id: delete-preview
+        uses: ./.github/actions/delete-feedback
+
       - name: Deploy App to Amazon ECS
         id: deploy-preview-app
-        uses: ./.github/actions/deploy-preview
+        uses: ./.github/actions/deploy-feedback
 
       - name: Comment Build Status as Completed
         uses: hasura/comment-progress@v2.3.0
@@ -71,5 +72,5 @@ jobs:
           github-token: ${{ steps.app-token.outputs.token }}
           repository: ${{ github.repository }}
           number: ${{ env.PR_NUMBER }}
-          message: "| \U00002705 | Yay! Visit your super cool amazing preview app here ${{ steps.deploy-preview-app.outputs.url }} |"
+          message: "| \U00002705 | Updated feedback interface deployed to ${{ steps.deploy-preview-app.outputs.url }} |"
           append: true
