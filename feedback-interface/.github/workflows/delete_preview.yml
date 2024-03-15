@@ -1,0 +1,38 @@
+name: "Update Preview App"
+on:
+  pull_request:
+    types: [closed]
+
+env:
+  PROJECT: ${{ github.event.repository.name }}
+  PR_NUMBER: ${{ github.event.number }}
+  AWS_REGION: us-east-2 # REGION
+  ECR_REPOSITORY: team5-client-app-test3 # IMAGE_REPOSITORY
+  ECS_CLUSTER: team5-client-app3-cluster # CLUSTER_NAME
+  LB_NAME: team5-load-balancer # DEFAULT_LB
+
+jobs:
+  teardown:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: set ECR Registry Environment Variable
+        run: |
+          echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+
+      - name: Delete App on Amazon ECS
+        id: delete-preview
+        uses: ./.github/actions/delete-preview
